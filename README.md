@@ -1,5 +1,5 @@
 # visualization-Ecommerce-ICT-activitiy-analysis
-Data was obtained from 
+Data was obtained from https://www.ons.gov.uk/businessindustryandtrade/itandinternetindustry/bulletins/ecommerceandictactivity/2019 
 
 - Conducted data preprocessing, analysis, and visualization in R to explore the correlation between E-commerce sales and ICT activities in the UK
 - Used ggplot2, ggpubr, dplyr, tidyverse
