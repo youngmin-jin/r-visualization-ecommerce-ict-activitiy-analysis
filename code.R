@@ -222,192 +222,12 @@ df <- table3_2019 %>%
 library(ggplot2)
 
 # -----------------------------------------------
-# Figure 1. Total e-commerce sales by industry sectors (2014 - 2019)
-# -----------------------------------------------
-  # ----------- data ------------
-df_a1 <- table3 %>% 
-  filter(Sector != 'All') %>% 
-  group_by(Sector) %>%
-  mutate(Total_allyears = sum(Total))
-
-    # label data for Wholesale and Manufacturing as they are the biggest sectors
-df_a1_label <- df_a1 %>% 
-  filter(Year == 2014) %>% 
-  filter(Sector %in% c('Wholesale','Manufacturing')) %>% 
-  select(Sector, Total_allyears) %>% 
-  mutate(labels = paste(Sector,'£',Total_allyears)) 
-df_a1_label$x <- 2016.5
-df_a1_label$y = c(250,85)
-
-  # ----------- visualization ------------
-ggplot(df_a1) +
-  geom_area(aes(Year, Total, fill = reorder(Sector, Total)), color = 'black', linewidth = 0.7) +
-  scale_fill_brewer(palette = 'Greens') +
-  scale_y_continuous(labels = function(x) str_c(x,'£'), breaks = seq(0,700,350)) +
-  geom_text(
-    data = df_a1_label
-    , aes(x, y, label = labels)
-    , size = 4.4
-    , color = 'white'
-    , fontface = 'bold'
-  ) +
-  theme(
-    panel.background = element_rect(fill = '#F5F5F5', color = '#F5F5F5')
-    , plot.background = element_rect(fill = '#F5F5F5')
-    , legend.background = element_rect(fill = '#F5F5F5', color = '#F5F5F5')
-    , legend.key.size = unit(0.4, 'cm')
-    , legend.direction = 'vertical'
-    , legend.text = element_text(size = 10)
-    , legend.position = 'right'
-    , axis.ticks.y = element_blank()
-    , axis.title.y = element_blank()
-    , axis.text.y = element_text(size = 10)
-    , axis.ticks.x = element_blank()
-    , axis.title.x = element_blank()
-    , axis.text.x = element_text(size = 10)
-  ) +
-  guides(fill = guide_legend(title = "Sectors"))
-ggsave(filename = 'figure1.png', path = 'figure/DataVisu/', device='tiff', dpi=700)
-
-
-# -----------------------------------------------
-# Figure 2. Composition of total e-commerce sales and internet accessibility (2014- 2019)
-# -----------------------------------------------
-library(tidyverse)
-library(geomtextpath)
-
-  # ----------- data ------------
-df_b1 <- table3 %>% 
-  pivot_longer(
-    cols = c('Website','EDI')
-    , names_to = 'Kind'
-    , values_to = 'Value'
-  ) %>% 
-  group_by(Kind, Year) %>%
-  summarise(Value = sum(Value)) %>% 
-  group_by(Year) %>% 
-  mutate(Percent = Value/ sum(Value)) %>% 
-  select(!Value) %>% 
-  rename('Value' = 'Percent')
-df_b2 <- table14 %>% mutate(Value = Value * 0.01)
-df_b3 <- table17 %>% mutate(Value = Value * 0.01)
-df_b <- rbind(df_b1, df_b2, df_b3)
-df_b <- df_b %>% arrange(desc(Value))
-df_b$Kind <- factor(df_b$Kind, levels = unique(df_b$Kind))
-
-df_b_c1 <- c('EDI','Website')
-df_b_c2 <- c('Internet access','Broadband','Computer use','Employee computer use with internet access')
-
-  # ----------- visualization ------------
-ggplot(df_b, aes(fill = Kind)) +
-  geom_bar(data = subset(df_b, Kind %in% df_b_c1), aes(x = Year, y = Value), stat = 'identity', position = 'fill', color = 'white', size = 0.9, alpha = 0.4) +
-  geom_text(data = subset(df_b, Kind %in% df_b_c1), aes(x = Year, y = Value, label = sprintf("%1.1f", Value*100)), position = position_fill(vjust=0.95), colour="black", size = 3.5) +
-  scale_fill_manual(breaks = df_b_c1, values = c('lightblue','lightgreen','white','white','white','#FEE391')) +
-  scale_x_continuous(breaks = c(2014:2019)) +
-  geom_textline(data = subset(df_b, Kind %in% df_b_c2), aes(x = Year, y = Value, label = Kind), color = 'black', hjust = 0.5, linewidth = 1.5, size = 4.5) +
-  geom_text(data = subset(df_b, Year %in% c(2014,2019)), aes(x = Year, y = ifelse(Kind %in% df_b_c2, Value, NA), label = Value*100, hjust = ifelse(Year == 2014, 1.2, -0.2), vjust = ifelse((Year == 2014) & (Kind == 'Broadband'), 0.8, 0.3)), color = 'black', size = 3.5) +
-  scale_y_continuous(labels = function(x) str_c(x*100,'%'), breaks = c(1)) +
-  theme(
-    panel.background = element_rect(fill = '#F5F5F5', color = '#F5F5F5')
-    , plot.background = element_rect(fill = '#F5F5F5')
-    , legend.background = element_rect(fill = '#F5F5F5', color = '#F5F5F5')
-    , legend.position = 'right'
-    , legend.text = element_text(size = 10)
-    , legend.key.height = unit(0.4, "cm"), legend.title = element_blank()
-    , axis.text.y = element_text(size = 10)
-    , axis.title.y = element_blank()
-    , axis.ticks.y = element_blank()
-    , axis.ticks.x = element_blank()
-    , axis.title.x = element_blank()
-    , axis.text.x = element_text(size = 10)
-  ) 
-ggsave(filename = 'figure2.png', path = 'figure/DataVisu/', device='tiff', dpi=700)
-
-
-# -----------------------------------------------
-# Figure 3. Use of Cloud Computing Services and Big Data Analysis by Industry Sectors (2019)
-# -----------------------------------------------
-library(fmsb)
-
-  # ----------- data ------------
-df_c1 <- df %>% select(Sector, Bought.any.cloud.computing.services)
-df_c2 <- df %>% 
-  mutate('Big.data.analysis' = (Business.own.data.from.smart.devices.or.sensors + Geolocation.data.from.the.use.of.portable.devices + Data.generated.from.social.media + Other.big.data.sources) * 0.3) %>% 
-  select(Sector, Big.data.analysis)
-df_c <- df_c1 %>% left_join(df_c2, by = 'Sector')
-df_c <- df_c %>% rename('Cloud.services' = 'Bought.any.cloud.computing.services') 
-df_c <- df_c %>% mutate(Sector = str_replace(Sector, " (?=[:alpha:])", "\n"))
-df_c_names <- df_c[,1]
-df_c <- as.data.frame(as.matrix(t(df_c)))
-colnames(df_c) <- df_c[1,]
-df_c <- df_c[-1,]
-
-df_c3 <- df_c[1,]
-rownames(df_c3) <- 'min'
-df_c3 <- df_c3 %>% mutate(across(.cols = everything(), .fns = ~0))
-df_c4 <- df_c[2,]
-rownames(df_c4) <- 'max'
-df_c4 <- df_c4 %>% mutate(across(.cols = everything(), .fns = ~100))
-df_c <- rbind(df_c4, df_c3, df_c)
-df_c <- df_c %>% 
-  select(c('Wholesale','Information\nand communication','Utilities','Manufacturing','Accommodation\nand food services','Transport\nand storage','Construction','Retail','Other\nservices'))
-df_c <- df_c %>% mutate(across(.cols = everything(), .fns = as.numeric))
-
-  # ----------- visualization ------------
-dev.off()
-plot.new()
-par(
-  family = "cabrito"
-  , oma = c(1, 1, 3, 1)
-  , mar = c(1, 0, 1, 0)
-  , bg = '#F5F5F5'
-)
-layout(
-  matrix(
-    c(1,2,3)
-    , ncol = 1
-    , byrow = TRUE
-  )
-  , heights = c(27, 3)
-)
-radarchart(
-  df_c
-  , seg = 10
-  , caxislabels = c(0,'',20,'',40,'',60,'',80,'','100%')
-  , axistype = 1
-  , pcol = c('red','blue')
-  , pfcol = scales::alpha(c('red','blue'),0.5)
-  , plwd = 3
-  , plty = 1
-  , calcex = 1.3
-  , cglcol = 'darkgrey'
-  , cglty = 1
-  , cglwd = 0.8
-  , axislabcol = '#696969'
-  , vlcex = 1.7
-) 
-plot.new()
-par(mar = c(0,0,0,0))
-legend(
-  'bottom'
-  , legend = c('Cloud Computing Services','Big Data Analysis')
-  , bty = 'n'
-  , pch = 20
-  , col = scales::alpha(c('red','blue'),0.5)
-  , pt.cex = 2
-  , cex = 1.5
-  , horiz = F
-)
-tiff(filename = "figure3.tiff", units="in",res= 700, height=767, width=814)
-
-# -----------------------------------------------
-# Figure 4.
-#   Figure 4-1. Correlation between E-commerce Sales and Use of Cloud Computing Services by Industry Sectors (2019)
-#   Figure 4-2. Correlation between E-commerce Sales and Use of Big Data Analysis by Industry Sectors (2019)
+# Visualization 1. Correlation between E-commerce Sales and Use of Cloud Computing Services by Industry Sectors (2019)
+# Visualization 2. Correlation between E-commerce Sales and Use of Big Data Analysis by Industry Sectors (2019)
 # -----------------------------------------------
 library(ggpubr)
 
-  # ----------- Figure 4-1 data ------------
+  # ----------- data 1 ------------
 df_d <- df %>% select(!Year)
 df_d1 <- df_d %>% 
   select(!13:16) %>%
@@ -435,7 +255,7 @@ df_d1_ml <- df_d1 %>%
   arrange(desc(Slope))
 df_d1_ml <- top_n(ungroup(df_d1_ml), n = 3, wt = Slope)
 
-  # ----------- Figure 4-2 data ------------
+  # ----------- data 2 ------------
 df_d2 <- df_d %>% 
   select(!5:12) %>% 
   mutate('Big data analysis' = (Business.own.data.from.smart.devices.or.sensors + Geolocation.data.from.the.use.of.portable.devices + Data.generated.from.social.media + Other.big.data.sources) * 0.3) %>% 
@@ -521,19 +341,94 @@ g_scatter2 <- function(data, x, y, label, seq, lim, title){
     ) 
 }
 
-  # ----------- Figure 4-1 visualization ------------
+  # ----------- visualization 1 ------------
 df_d_g1 <- g_scatter1(df_d1 %>% filter(Kind == 'Cloud.services'), Value, Total, Sector, Kind, 60, 'E-commerce Sales & Any Cloud Computing Services Use')
 df_d_g2 <- g_scatter2(df_d1 %>% filter(Kind %in% df_d1_ml$Kind), Value, Total, Prefix, Kind, 60, 'E-commerce Sales & Specific Cloud Computing Services Use')
 ggarrange(df_d_g1, df_d_g2, ncol = 1, nrow = 2) 
 ggsave(filename = 'figure4-1.png', path = 'figure/DataVisu/', device='tiff', dpi=700)
 
-  # ----------- Figure 4-2 visualization ------------
+  # ----------- visualization 2 ------------
 df_d_g3 <- g_scatter1(df_d2 %>% filter(Kind == 'Big data analysis'), Value, Total, Sector, Kind, 20, 'E-commerce Sales & Any Big Data Analysis Use')
 df_d_g4 <- g_scatter2(df_d2 %>% filter(Kind != 'Big data analysis'), Value, Total, Prefix, Kind, 20, 'E-commerce Sales & Specific Big Data Analysis Use')
 ggarrange(df_d_g3, df_d_g4, ncol = 1, nrow = 2) 
 ggsave(filename = 'figure4-2.png', path = 'figure/DataVisu/', device='tiff', dpi=700)
 
+                       
+# -----------------------------------------------
+# Visualization 3. Use of Cloud Computing Services and Big Data Analysis by Industry Sectors (2019)
+# -----------------------------------------------
+library(fmsb)
 
+  # ----------- data ------------
+df_c1 <- df %>% select(Sector, Bought.any.cloud.computing.services)
+df_c2 <- df %>% 
+  mutate('Big.data.analysis' = (Business.own.data.from.smart.devices.or.sensors + Geolocation.data.from.the.use.of.portable.devices + Data.generated.from.social.media + Other.big.data.sources) * 0.3) %>% 
+  select(Sector, Big.data.analysis)
+df_c <- df_c1 %>% left_join(df_c2, by = 'Sector')
+df_c <- df_c %>% rename('Cloud.services' = 'Bought.any.cloud.computing.services') 
+df_c <- df_c %>% mutate(Sector = str_replace(Sector, " (?=[:alpha:])", "\n"))
+df_c_names <- df_c[,1]
+df_c <- as.data.frame(as.matrix(t(df_c)))
+colnames(df_c) <- df_c[1,]
+df_c <- df_c[-1,]
+
+df_c3 <- df_c[1,]
+rownames(df_c3) <- 'min'
+df_c3 <- df_c3 %>% mutate(across(.cols = everything(), .fns = ~0))
+df_c4 <- df_c[2,]
+rownames(df_c4) <- 'max'
+df_c4 <- df_c4 %>% mutate(across(.cols = everything(), .fns = ~100))
+df_c <- rbind(df_c4, df_c3, df_c)
+df_c <- df_c %>% 
+  select(c('Wholesale','Information\nand communication','Utilities','Manufacturing','Accommodation\nand food services','Transport\nand storage','Construction','Retail','Other\nservices'))
+df_c <- df_c %>% mutate(across(.cols = everything(), .fns = as.numeric))
+
+  # ----------- visualization ------------
+dev.off()
+plot.new()
+par(
+  family = "cabrito"
+  , oma = c(1, 1, 3, 1)
+  , mar = c(1, 0, 1, 0)
+  , bg = '#F5F5F5'
+)
+layout(
+  matrix(
+    c(1,2,3)
+    , ncol = 1
+    , byrow = TRUE
+  )
+  , heights = c(27, 3)
+)
+radarchart(
+  df_c
+  , seg = 10
+  , caxislabels = c(0,'',20,'',40,'',60,'',80,'','100%')
+  , axistype = 1
+  , pcol = c('red','blue')
+  , pfcol = scales::alpha(c('red','blue'),0.5)
+  , plwd = 3
+  , plty = 1
+  , calcex = 1.3
+  , cglcol = 'darkgrey'
+  , cglty = 1
+  , cglwd = 0.8
+  , axislabcol = '#696969'
+  , vlcex = 1.7
+) 
+plot.new()
+par(mar = c(0,0,0,0))
+legend(
+  'bottom'
+  , legend = c('Cloud Computing Services','Big Data Analysis')
+  , bty = 'n'
+  , pch = 20
+  , col = scales::alpha(c('red','blue'),0.5)
+  , pt.cex = 2
+  , cex = 1.5
+  , horiz = F
+)
+tiff(filename = "figure3.tiff", units="in",res= 700, height=767, width=814)
 
 
 
